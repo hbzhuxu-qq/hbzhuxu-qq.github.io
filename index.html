@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinate System</title>
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            border: 1px solid #ccc;
+        }
+
+        #coordinates-list {
+            flex: 1;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .coordinate-item {
+            margin-bottom: 10px;
+        }
+
+        #export-btn, #clear-btn {
+            margin-bottom: 10px;
+        }
+
+        #export-text {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container">
+    <canvas id="canvas" width="720" height="720"></canvas>
+</div>
+
+<div id="coordinates-list">
+    <button id="clear-btn" onclick="clearCoordinates()">Clear List</button>
+    <h2>Coordinates List</h2>
+    <ul id="coordinate-list-ul"></ul>
+    <div id="export-text"></div>
+
+    <h2>Tune Link</h2>
+    <div>
+        <a target="_blank" href="http://192.168.43.1:8080/dash">DashBoard</a></div>
+    <div>
+        <a target="_blank" href="http://192.168.43.1:8080/tuning/forward-ramp.html">kS,kV:forward-ramp</a></div>
+    <div>
+        <a target="_blank" href="http://192.168.43.1:8080/tuning/lateral-ramp.html">lateral-ramp</a></div>
+    <div>
+        <a target="_blank" href="http://192.168.43.1:8080/tuning/drive-encoder-angular-ramp.html">drive-encoder-angular-ramp</a>
+    </div>
+    <div>
+        <a target="_blank"
+           href="http://192.168.43.1:8080/tuning/dead-wheel-angular-ramp.html">dead-wheel-angular-ramp</a>
+    </div>
+    <h2>Vision Toolchains</h2>
+    <div><a target="_blank"
+           href="https://ftc-ml.firstinspires.org/">ftc-ml</a></div>
+
+
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const coordinateList = document.getElementById('coordinate-list-ul');
+    const exportBtn = document.getElementById('export-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const exportText = document.getElementById('export-text');
+    const backgroundImage = new Image();
+
+    // 设置背景图的路径
+    backgroundImage.src = 'background.jpg';
+
+    // 当背景图加载完成后执行回调函数
+    backgroundImage.onload = function () {
+        // 使用drawImage在Canvas上绘制背景图
+        ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+    };
+
+    const coordinates = [];
+    let pointCounter = 1;
+
+    function drawCoordinateSystem() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        // Draw coordinate axes
+        ctx.beginPath();
+        // ctx.moveTo(canvas.width / 2, 0);
+        // ctx.lineTo(canvas.width / 2, canvas.height);
+        // ctx.moveTo(0, canvas.height / 2);
+        // ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.strokeStyle = '#FFF';
+        ctx.stroke();
+
+        // Draw ticks on x-axis
+        // for (let i = -72; i <= 72; i += 24) {
+        //     const x = canvas.width / 2 + i * 5;
+        //     const y = canvas.height / 2;
+        //     ctx.beginPath();
+        //     ctx.moveTo(x, y - 5);
+        //     ctx.lineTo(x, y + 5);
+        //     ctx.stroke();
+        //     ctx.fillText(i, x - 5, y + 20);
+        // }
+        //
+        // // Draw ticks on y-axis
+        // for (let i = -72; i <= 72; i += 24) {
+        //     const x = canvas.width / 2;
+        //     const y = canvas.height / 2 - i * 5;
+        //     ctx.beginPath();
+        //     ctx.moveTo(x - 5, y);
+        //     ctx.lineTo(x + 5, y);
+        //     ctx.stroke();
+        //     ctx.fillText(i, x - 30, y + 5);
+        // }
+
+
+    }
+
+    function drawCoordinates() {
+        drawCoordinateSystem();
+        ctx.lineWidth = 4;
+
+        coordinates.forEach((coord, index) => {
+            const displayX = canvas.width / 2 + coord.x * 5;
+            const displayY = canvas.height / 2 - coord.y * 5;
+
+            // Draw arrow indicating heading
+            const arrowLength = 30;
+            const arrowX = displayX + arrowLength * Math.cos(coord.heading);
+            const arrowY = displayY - arrowLength * Math.sin(coord.heading);
+
+            ctx.beginPath();
+            ctx.arc(displayX, displayY, 25, 0, 2 * Math.PI);
+            ctx.fillStyle = '#900';
+            ctx.fill();
+            ctx.fillStyle = '#9f0';
+            ctx.font = '20px Arial';
+            ctx.fillText(coord.id + ":" + coord.x + "," + coord.y, displayX - 15, displayY - 25);
+            ctx.fillStyle = '#900';
+
+            ctx.beginPath();
+            ctx.moveTo(displayX, displayY);
+            ctx.strokeStyle = '#FF0';
+            ctx.lineTo(arrowX, arrowY);
+            ctx.stroke();
+            ctx.strokeStyle = '#FFF';
+
+            if (index > 0) {
+                const prevCoord = coordinates[index - 1];
+                const prevX = canvas.width / 2 + prevCoord.x * 5;
+                const prevY = canvas.height / 2 - prevCoord.y * 5;
+                ctx.beginPath();
+                ctx.strokeStyle = '#FFF';
+                ctx.moveTo(prevX, prevY);
+                ctx.lineTo(displayX, displayY);
+                ctx.stroke();
+            }
+        });
+
+        //drawSpline();
+    }
+
+    function drawSpline() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        controlPoints = coordinates;
+        ctx.beginPath();
+        ctx.moveTo(controlPoints[0].x, controlPoints[0].y);
+
+        for (var i = 1; i < controlPoints.length - 2; i++) {
+            var xc = (controlPoints[i].x + controlPoints[i + 1].x) / 2;
+            var yc = (controlPoints[i].y + controlPoints[i + 1].y) / 2;
+            ctx.quadraticCurveTo(controlPoints[i].x, controlPoints[i].y, xc, yc);
+        }
+
+        // curve through the last two points
+        ctx.quadraticCurveTo(
+            controlPoints[i].x,
+            controlPoints[i].y,
+            controlPoints[i + 1].x,
+            controlPoints[i + 1].y
+        );
+
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+
+    function updateCoordinatesList() {
+        coordinateList.innerHTML = '';
+        coordinates.forEach(coord => {
+            const li = document.createElement('li');
+            li.className = 'coordinate-item';
+            li.innerHTML = `
+                    <span>Pos2D ${coord.id}:</span>
+                    <span>( ${coord.x.toFixed(0)},</span>
+                    <span>${coord.y.toFixed(0)},</span>
+                    <span>${coord.heading.toFixed(0)})</span>
+                    <button onclick="moveCoordinate(${coord.id}, 'up')">Up</button>
+                    <button onclick="deleteCoordinate(${coord.id})">Delete</button>
+  `;
+            coordinateList.appendChild(li);
+        });
+        exportCoordinates();
+
+    }
+
+    function moveCoordinate(id, direction) {
+        const index = coordinates.findIndex(coord => coord.id === id);
+        const temp = coordinates[index];
+
+        if (direction === 'up' && index > 0) {
+            coordinates[index] = coordinates[index - 1];
+            coordinates[index - 1] = temp;
+            coordinates[index].id = id;
+            coordinates[index - 1].id = id - 1;
+        } else if (direction === 'down' && index < coordinates.length - 1) {
+            coordinates[index] = coordinates[index + 1];
+            coordinates[index + 1] = temp;
+            coordinates[index].id = id;
+            coordinates[index + 1].id = id + 1;
+        }
+        drawCoordinates();
+        updateCoordinatesList();
+    }
+
+    function deleteCoordinate(id) {
+        const index = coordinates.findIndex(coord => coord.id === id);
+        console.log(index);
+        coordinates.splice(index, 1);
+        for (let i = 0; i < coordinates.length; i++) {
+            coordinates[i].id = i;
+        }
+        drawCoordinates();
+        updateCoordinatesList();
+    }
+
+    function exportCoordinates() {
+        exportText.innerHTML = coordinates.map(coord => `//{${coord.x.toFixed(0)}, ${coord.y.toFixed(0)}, Math.toRadians(${(coord.heading * (180 / Math.PI)).toFixed(0)})}`).join('<br>');
+    }
+
+    function clearCoordinates() {
+        coordinates.length = 0;
+        drawCoordinates();
+        updateCoordinatesList();
+    }
+
+    canvas.addEventListener('mousedown', function (event) {
+        const rect = canvas.getBoundingClientRect();
+        const startX = event.clientX - rect.left;
+        const startY = event.clientY - rect.top;
+
+        const id = coordinates.length;
+        const initialX = Math.round((startX - canvas.width / 2) / 5);
+        const initialY = Math.round((canvas.height / 2 - startY) / 5);
+
+        coordinates.push({id, x: initialX, y: initialY, heading: 0});
+        drawCoordinates();
+        updateCoordinatesList();
+
+        function handleMouseMove(moveEvent) {
+            const currentX = Math.round((moveEvent.clientX - rect.left - canvas.width / 2) / 5);
+            const currentY = Math.round((canvas.height / 2 - moveEvent.clientY + rect.top) / 5);
+            const deltaX = currentX - initialX;
+            const deltaY = currentY - initialY;
+            const heading = Math.atan2(deltaY, deltaX);
+
+            const index = coordinates.findIndex(coord => coord.id === id);
+            coordinates[index] = {id, x: initialX, y: initialY, heading};
+
+            drawCoordinates();
+            updateCoordinatesList();
+        }
+
+        function handleMouseUp() {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        }
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    });
+
+
+    canvas.addEventListener('mousemove', function (e) {
+
+        const currentX = e.clientX - canvas.getBoundingClientRect().left;
+        const currentY = e.clientY - canvas.getBoundingClientRect().top;
+
+        const startX = currentX - 45;
+        const startY = currentY - 45;
+        drawCoordinates();
+        ctx.strokeRect(startX, startY, 90, 90);
+    });
+    drawCoordinates();
+    updateCoordinatesList();
+
+</script>
+
+</body>
+</html>
+
